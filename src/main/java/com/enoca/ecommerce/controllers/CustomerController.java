@@ -1,7 +1,9 @@
 package com.enoca.ecommerce.controllers;
 
-import com.enoca.ecommerce.entities.Customer;
+import com.enoca.ecommerce.dtos.CustomerRequestDTO;
+import com.enoca.ecommerce.dtos.CustomerResponseDTO;
 import com.enoca.ecommerce.services.CustomerService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,9 +24,9 @@ public class CustomerController {
 
     // Create a new customer
     @PostMapping
-    public ResponseEntity<Customer> createCustomer(@RequestBody Customer customer) {
+    public ResponseEntity<CustomerResponseDTO> createCustomer(@Valid @RequestBody CustomerRequestDTO customerRequestDTO) {
         try {
-            Customer created = customerService.createCustomer(customer);
+            CustomerResponseDTO created = customerService.createCustomer(customerRequestDTO);
             return new ResponseEntity<>(created, HttpStatus.CREATED);
         } catch (IllegalArgumentException ex) {
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
@@ -33,8 +35,8 @@ public class CustomerController {
 
     // Get all customers
     @GetMapping
-    public ResponseEntity<List<Customer>> getAllCustomers() {
-        List<Customer> customers = customerService.getAllCustomers();
+    public ResponseEntity<List<CustomerResponseDTO>> getAllCustomers() {
+        List<CustomerResponseDTO> customers = customerService.getAllCustomers();
         if(customers.isEmpty()) {
             return new ResponseEntity<>(customers, HttpStatus.NO_CONTENT);
         }
@@ -43,20 +45,24 @@ public class CustomerController {
 
     // Get customer by ID
     @GetMapping("/{id}")
-    public ResponseEntity<Customer> getCustomerById(@PathVariable Long id) {
-        return customerService.getCustomerById(id)
-                .map(customer -> new ResponseEntity<>(customer, HttpStatus.OK))
-                .orElse(new ResponseEntity<>(null, HttpStatus.NOT_FOUND));
+    public ResponseEntity<CustomerResponseDTO> getCustomerById(@PathVariable Long id) {
+        try {
+            CustomerResponseDTO customer = customerService.getCustomerById(id);
+            return new ResponseEntity<>(customer, HttpStatus.OK);
+        } catch (IllegalArgumentException ex) {
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        }
     }
 
     // Update customer
     @PutMapping("/{id}")
-    public ResponseEntity<Customer> updateCustomer(@PathVariable Long id, @RequestBody Customer customer) {
+    public ResponseEntity<CustomerResponseDTO> updateCustomer(@PathVariable Long id,
+                                                              @Valid @RequestBody CustomerRequestDTO customerRequestDTO) {
         try {
-            Customer updated = customerService.updateCustomer(id, customer);
+            CustomerResponseDTO updated = customerService.updateCustomer(id, customerRequestDTO);
             return new ResponseEntity<>(updated, HttpStatus.OK);
         } catch (IllegalArgumentException ex) {
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         }
     }
 
