@@ -4,11 +4,14 @@ import com.enoca.ecommerce.dtos.CartItemRequestDTO;
 import com.enoca.ecommerce.dtos.CartItemResponseDTO;
 import com.enoca.ecommerce.entities.CartItem;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface CartItemMapper {
 
+    @Mapping(source = "cart.id", target = "cartId")
+    @Mapping(source = "product.id", target = "productId")
     CartItemResponseDTO toResponseDTO(CartItem cartItem);
 
     CartItem toEntity(CartItemRequestDTO dto);
