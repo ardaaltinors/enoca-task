@@ -1,3 +1,5 @@
+// File: /src/main/java/com/enoca/ecommerce/services/CartItemService.java
+
 package com.enoca.ecommerce.services;
 
 import com.enoca.ecommerce.dtos.CartItemRequestDTO;
@@ -13,6 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
 
 @Service
 public class CartItemService {
@@ -47,8 +51,15 @@ public class CartItemService {
         cartItem.setQuantity(cartItemRequestDTO.getQuantity());
         cartItem.setPrice(product.getPrice());
 
+        // Calculate totalPrice
+        BigDecimal totalPrice = product.getPrice().multiply(new BigDecimal(cartItemRequestDTO.getQuantity()));
+
         CartItem savedCartItem = cartItemRepository.save(cartItem);
-        return cartItemMapper.toResponseDTO(savedCartItem);
+
+        CartItemResponseDTO responseDTO = cartItemMapper.toResponseDTO(savedCartItem);
+        responseDTO.setTotalPrice(totalPrice);
+
+        return responseDTO;
     }
 
     @Transactional
@@ -56,15 +67,21 @@ public class CartItemService {
         CartItem cartItem = cartItemRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("CartItem not found with ID: " + id));
 
-        cartItem.setQuantity(cartItemRequestDTO.getQuantity());
-
         Product product = productRepository.findById(cartItemRequestDTO.getProductId())
                 .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + cartItemRequestDTO.getProductId()));
 
+        cartItem.setQuantity(cartItemRequestDTO.getQuantity());
         cartItem.setPrice(product.getPrice());
 
+        // Calculate totalPrice
+        BigDecimal totalPrice = product.getPrice().multiply(new BigDecimal(cartItemRequestDTO.getQuantity()));
+
         CartItem updatedCartItem = cartItemRepository.save(cartItem);
-        return cartItemMapper.toResponseDTO(updatedCartItem);
+
+        CartItemResponseDTO responseDTO = cartItemMapper.toResponseDTO(updatedCartItem);
+        responseDTO.setTotalPrice(totalPrice);
+
+        return responseDTO;
     }
 
     public void deleteCartItem(Long id) {
