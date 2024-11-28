@@ -3,8 +3,8 @@ package com.enoca.ecommerce.services;
 import com.enoca.ecommerce.dtos.CustomerRequestDTO;
 import com.enoca.ecommerce.dtos.CustomerResponseDTO;
 import com.enoca.ecommerce.entities.Customer;
-import com.enoca.ecommerce.mappers.CustomerMapper;
 import com.enoca.ecommerce.repositories.CustomerRepository;
+import com.enoca.ecommerce.mappers.CustomerMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -63,7 +63,7 @@ public class CustomerService {
             throw new IllegalArgumentException("Email already in use.");
         }
 
-        customerMapper.updateEntity(customer, customerRequestDTO);
+        customerMapper.updateEntityFromDto(customerRequestDTO, customer);
         Customer updatedCustomer = customerRepository.save(customer);
         return customerMapper.toResponseDTO(updatedCustomer);
     }

@@ -3,45 +3,18 @@ package com.enoca.ecommerce.mappers;
 import com.enoca.ecommerce.dtos.CustomerRequestDTO;
 import com.enoca.ecommerce.dtos.CustomerResponseDTO;
 import com.enoca.ecommerce.entities.Customer;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.MappingTarget;
 
-@Component
-public class CustomerMapper {
+@Mapper(componentModel = "spring")
+public interface CustomerMapper {
 
-    // Convert Entity to Response DTO
-    public CustomerResponseDTO toResponseDTO(Customer customer) {
-        if (customer == null) {
-            return null;
-        }
-        CustomerResponseDTO dto = new CustomerResponseDTO();
-        dto.setId(customer.getId());
-        dto.setFirstName(customer.getFirstName());
-        dto.setLastName(customer.getLastName());
-        dto.setEmail(customer.getEmail());
-        dto.setCreatedAt(customer.getCreatedAt());
-        dto.setUpdatedAt(customer.getUpdatedAt());
-        return dto;
-    }
+    // Map from Customer to CustomerResponseDTO
+    CustomerResponseDTO toResponseDTO(Customer customer);
 
-    // Convert Request DTO to Entity
-    public Customer toEntity(CustomerRequestDTO dto) {
-        if (dto == null) {
-            return null;
-        }
-        Customer customer = new Customer();
-        customer.setFirstName(dto.getFirstName());
-        customer.setLastName(dto.getLastName());
-        customer.setEmail(dto.getEmail());
-        return customer;
-    }
+    // Map from CustomerRequestDTO to Customer
+    Customer toEntity(CustomerRequestDTO dto);
 
-    // Update Entity with Request DTO
-    public void updateEntity(Customer customer, CustomerRequestDTO dto) {
-        if (dto == null || customer == null) {
-            return;
-        }
-        customer.setFirstName(dto.getFirstName());
-        customer.setLastName(dto.getLastName());
-        customer.setEmail(dto.getEmail());
-    }
+    // Update existing Customer entity with CustomerRequestDTO data
+    void updateEntityFromDto(CustomerRequestDTO dto, @MappingTarget Customer customer);
 }
