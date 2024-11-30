@@ -1,7 +1,12 @@
 package com.enoca.ecommerce.services;
 
 import com.enoca.ecommerce.dtos.OrderResponseDTO;
-import com.enoca.ecommerce.entities.*;
+import com.enoca.ecommerce.dtos.PlaceOrderRequestDTO;
+import com.enoca.ecommerce.entities.Cart;
+import com.enoca.ecommerce.entities.CartItem;
+import com.enoca.ecommerce.entities.Customer;
+import com.enoca.ecommerce.entities.Order;
+import com.enoca.ecommerce.entities.OrderItem;
 import com.enoca.ecommerce.mappers.OrderMapper;
 import com.enoca.ecommerce.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,35 +48,36 @@ public class OrderService {
     }
 
     @Transactional
-    public OrderResponseDTO placeOrder(Long customerId) {
+    public OrderResponseDTO placeOrder(PlaceOrderRequestDTO placeOrderRequestDTO) {
         // Get customer by idş
-        Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new IllegalArgumentException("Customer not found with ID: " + customerId));
+        Customer customer = customerRepository.findById(placeOrderRequestDTO.getCustomerId())
+                .orElseThrow(() -> new IllegalArgumentException("Customer not found with ID: " + placeOrderRequestDTO.getCustomerId()));
 
         // get customers cart
         Cart cart = cartRepository.findByCustomer(customer)
-                .orElseThrow(() -> new IllegalArgumentException("Cart not found for customer ID: " + customerId));
+                .orElseThrow(() -> new IllegalArgumentException("Cart not found for customer ID: " + placeOrderRequestDTO.getCustomerId()));
 
         // get all items in the cart
         List<CartItem> cartItems = cartItemRepository.findByCart(cart);
 
         if (cartItems.isEmpty()) {
-            throw new IllegalArgumentException("Cart is empty for customer ID: " + customerId);
+            throw new IllegalArgumentException("Cart is empty for customer ID: " + placeOrderRequestDTO.getCustomerId());
         }
 
         // Initialize a new Order
         Order order = new Order();
         order.setCustomer(customer);
         order.setOrderStatus("PENDING");
-        order.setShippingAddress("Default Shipping Address");
-        order.setBillingAddress("Default Billing Address");
-        order.setPaymentMethod("Credit Card");
-        order.setShippingMethod("HepsiJet");
+        order.setShippingAddress(placeOrderRequestDTO.getShippingAddress());
+        order.setBillingAddress(placeOrderRequestDTO.getBillingAddress());
+        order.setPaymentMethod(placeOrderRequestDTO.getPaymentMethod());
+        order.setShippingMethod(placeOrderRequestDTO.getShippingMethod());
         order.setOrderDate(LocalDateTime.now());
 
         // Process CartItems and create OrderItems
         List<OrderItem> orderItems = cartItems.stream().map(cartItem -> {
-            Product product = cartItem.getProduct();
+            // Fetch the Product
+            var product = cartItem.getProduct();
 
             // Check stock availability
             if (product.getStockQuantity() < cartItem.getQuantity()) {
