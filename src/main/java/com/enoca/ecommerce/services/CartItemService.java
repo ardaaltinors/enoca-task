@@ -45,6 +45,11 @@ public class CartItemService {
         Product product = productRepository.findById(cartItemRequestDTO.getProductId())
                 .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + cartItemRequestDTO.getProductId()));
 
+        // Check stock availability
+        if (product.getStockQuantity() < cartItemRequestDTO.getQuantity()) {
+            throw new IllegalArgumentException("Insufficient stock for product ID: " + product.getId());
+        }
+
         CartItem cartItem = new CartItem();
         cartItem.setCart(cart);
         cartItem.setProduct(product);
@@ -69,6 +74,11 @@ public class CartItemService {
 
         Product product = productRepository.findById(cartItemRequestDTO.getProductId())
                 .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + cartItemRequestDTO.getProductId()));
+
+        // Check stock availability
+        if (product.getStockQuantity() < cartItemRequestDTO.getQuantity()) {
+            throw new IllegalArgumentException("Insufficient stock for product ID: " + product.getId());
+        }
 
         cartItem.setQuantity(cartItemRequestDTO.getQuantity());
         cartItem.setPrice(product.getPrice());
