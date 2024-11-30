@@ -1,5 +1,3 @@
-// File: /src/main/java/com/enoca/ecommerce/services/CartItemService.java
-
 package com.enoca.ecommerce.services;
 
 import com.enoca.ecommerce.dtos.CartItemRequestDTO;
@@ -17,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @Service
 public class CartItemService {
@@ -39,9 +38,11 @@ public class CartItemService {
 
     @Transactional
     public CartItemResponseDTO addCartItem(CartItemRequestDTO cartItemRequestDTO) {
+        // Fetch the Cart
         Cart cart = cartRepository.findById(cartItemRequestDTO.getCartId())
                 .orElseThrow(() -> new IllegalArgumentException("Cart not found with ID: " + cartItemRequestDTO.getCartId()));
 
+        // Fetch the Product
         Product product = productRepository.findById(cartItemRequestDTO.getProductId())
                 .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + cartItemRequestDTO.getProductId()));
 
@@ -50,19 +51,31 @@ public class CartItemService {
             throw new IllegalArgumentException("Insufficient stock for product ID: " + product.getId());
         }
 
-        CartItem cartItem = new CartItem();
-        cartItem.setCart(cart);
-        cartItem.setProduct(product);
-        cartItem.setQuantity(cartItemRequestDTO.getQuantity());
-        cartItem.setPrice(product.getPrice());
+        // Check if CartItem already exists
+        Optional<CartItem> existingCartItemOpt = cartItemRepository.findByCartAndProduct(cart, product);
 
-        // Calculate totalPrice
-        BigDecimal totalPrice = product.getPrice().multiply(new BigDecimal(cartItemRequestDTO.getQuantity()));
+        CartItem cartItem;
+        if (existingCartItemOpt.isPresent()) {
+            // Update existing CartItem
+            cartItem = existingCartItemOpt.get();
+            cartItem.setQuantity(cartItem.getQuantity() + cartItemRequestDTO.getQuantity());
+            // Optionally, update the price if product price has changed
+            cartItem.setPrice(product.getPrice());
+        } else {
+            // Create new CartItem
+            cartItem = new CartItem();
+            cartItem.setCart(cart);
+            cartItem.setProduct(product);
+            cartItem.setQuantity(cartItemRequestDTO.getQuantity());
+            cartItem.setPrice(product.getPrice());
+        }
 
+        // Save the CartItem
         CartItem savedCartItem = cartItemRepository.save(cartItem);
 
+        // Prepare the response DTO with totalPrice
         CartItemResponseDTO responseDTO = cartItemMapper.toResponseDTO(savedCartItem);
-        responseDTO.setTotalPrice(totalPrice);
+        responseDTO.setTotalPrice(savedCartItem.getPrice().multiply(new BigDecimal(savedCartItem.getQuantity())));
 
         return responseDTO;
     }
