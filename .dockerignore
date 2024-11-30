@@ -1,0 +1,19 @@
+# Ignore Maven target directory
+target/
+
+# Ignore Git files
+.git
+.gitignore
+
+# Ignore Docker files
+Dockerfile
+docker-compose.yml
+
+# Ignore IDE-specific files
+*.iml
+*.log
+.idea/
+.vscode/
+
+# Ignore OS-specific files
+.DS_Store
