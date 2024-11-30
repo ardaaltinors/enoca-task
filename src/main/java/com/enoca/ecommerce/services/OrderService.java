@@ -1,17 +1,9 @@
 package com.enoca.ecommerce.services;
 
-import com.enoca.ecommerce.dtos.OrderRequestDTO;
 import com.enoca.ecommerce.dtos.OrderResponseDTO;
-import com.enoca.ecommerce.dtos.OrderItemRequestDTO;
-import com.enoca.ecommerce.entities.Customer;
-import com.enoca.ecommerce.entities.Order;
-import com.enoca.ecommerce.entities.OrderItem;
-import com.enoca.ecommerce.entities.Product;
+import com.enoca.ecommerce.entities.*;
 import com.enoca.ecommerce.mappers.OrderMapper;
-import com.enoca.ecommerce.repositories.CustomerRepository;
-import com.enoca.ecommerce.repositories.OrderItemRepository;
-import com.enoca.ecommerce.repositories.OrderRepository;
-import com.enoca.ecommerce.repositories.ProductRepository;
+import com.enoca.ecommerce.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +19,8 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final CustomerRepository customerRepository;
+    private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
     private final OrderItemRepository orderItemRepository;
     private final OrderMapper orderMapper;
@@ -34,60 +28,73 @@ public class OrderService {
     @Autowired
     public OrderService(OrderRepository orderRepository,
                         CustomerRepository customerRepository,
+                        CartRepository cartRepository,
+                        CartItemRepository cartItemRepository,
                         ProductRepository productRepository,
                         OrderItemRepository orderItemRepository,
                         OrderMapper orderMapper) {
         this.orderRepository = orderRepository;
         this.customerRepository = customerRepository;
+        this.cartRepository = cartRepository;
+        this.cartItemRepository = cartItemRepository;
         this.productRepository = productRepository;
         this.orderItemRepository = orderItemRepository;
         this.orderMapper = orderMapper;
     }
 
     @Transactional
-    public OrderResponseDTO createOrder(OrderRequestDTO orderRequestDTO) {
-        // Fetch the Customer by ID
-        Customer customer = customerRepository.findById(orderRequestDTO.getCustomerId())
-                .orElseThrow(() -> new IllegalArgumentException("Customer not found with ID: " + orderRequestDTO.getCustomerId()));
+    public OrderResponseDTO placeOrder(Long customerId) {
+        // Get customer by idş
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new IllegalArgumentException("Customer not found with ID: " + customerId));
+
+        // get customers cart
+        Cart cart = cartRepository.findByCustomer(customer)
+                .orElseThrow(() -> new IllegalArgumentException("Cart not found for customer ID: " + customerId));
+
+        // get all items in the cart
+        List<CartItem> cartItems = cartItemRepository.findByCart(cart);
+
+        if (cartItems.isEmpty()) {
+            throw new IllegalArgumentException("Cart is empty for customer ID: " + customerId);
+        }
 
         // Initialize a new Order
         Order order = new Order();
         order.setCustomer(customer);
         order.setOrderStatus("PENDING");
-        order.setShippingAddress(orderRequestDTO.getShippingAddress());
-        order.setBillingAddress(orderRequestDTO.getBillingAddress());
-        order.setPaymentMethod(orderRequestDTO.getPaymentMethod());
-        order.setShippingMethod(orderRequestDTO.getShippingMethod());
+        order.setShippingAddress("Default Shipping Address");
+        order.setBillingAddress("Default Billing Address");
+        order.setPaymentMethod("Credit Card");
+        order.setShippingMethod("HepsiJet");
         order.setOrderDate(LocalDateTime.now());
 
-        // Process OrderItems and collect them into a list
-        List<OrderItem> orderItems = orderRequestDTO.getOrderItems().stream().map(itemDTO -> {
-            // Fetch the Product by ID
-            Product product = productRepository.findById(itemDTO.getProductId())
-                    .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + itemDTO.getProductId()));
+        // Process CartItems and create OrderItems
+        List<OrderItem> orderItems = cartItems.stream().map(cartItem -> {
+            Product product = cartItem.getProduct();
 
             // Check stock availability
-            if (product.getStockQuantity() < itemDTO.getQuantity()) {
+            if (product.getStockQuantity() < cartItem.getQuantity()) {
                 throw new IllegalArgumentException("Insufficient stock for product ID: " + product.getId());
             }
 
-            // Deduct stock
-            product.setStockQuantity(product.getStockQuantity() - itemDTO.getQuantity());
+            // reduce stock
+            product.setStockQuantity(product.getStockQuantity() - cartItem.getQuantity());
             productRepository.save(product);
 
             // Create OrderItem
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(order);
             orderItem.setProduct(product);
-            orderItem.setQuantity(itemDTO.getQuantity());
-            orderItem.setPrice(product.getPrice());
+            orderItem.setQuantity(cartItem.getQuantity());
+            orderItem.setPrice(product.getPrice().multiply(new BigDecimal(cartItem.getQuantity())));
 
             return orderItem;
         }).collect(Collectors.toList());
 
-        // Calculate total amount by summing up all OrderItem prices multiplied by their quantities
+        // Calculate total amount
         BigDecimal totalAmount = orderItems.stream()
-                .map(item -> item.getPrice().multiply(new BigDecimal(item.getQuantity())))
+                .map(OrderItem::getPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         // Set total amount in Order
@@ -100,6 +107,9 @@ public class OrderService {
         orderItems.forEach(item -> item.setOrder(savedOrder));
         orderItemRepository.saveAll(orderItems);
         savedOrder.setOrderItems(orderItems);
+
+        // clear users cart
+        cartItemRepository.deleteAll(cartItems);
 
         return orderMapper.toResponseDTO(savedOrder);
     }

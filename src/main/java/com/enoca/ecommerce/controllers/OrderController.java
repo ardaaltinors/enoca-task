@@ -1,9 +1,7 @@
 package com.enoca.ecommerce.controllers;
 
-import com.enoca.ecommerce.dtos.OrderRequestDTO;
 import com.enoca.ecommerce.dtos.OrderResponseDTO;
 import com.enoca.ecommerce.services.OrderService;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,9 +20,9 @@ public class OrderController {
         this.orderService = orderService;
     }
 
-    @PostMapping
-    public ResponseEntity<OrderResponseDTO> createOrder(@Valid @RequestBody OrderRequestDTO orderRequestDTO) {
-        OrderResponseDTO createdOrder = orderService.createOrder(orderRequestDTO);
+    @PostMapping("/place-order/{customerId}")
+    public ResponseEntity<OrderResponseDTO> placeOrder(@PathVariable Long customerId) {
+        OrderResponseDTO createdOrder = orderService.placeOrder(customerId);
         return new ResponseEntity<>(createdOrder, HttpStatus.CREATED);
     }
 
@@ -33,7 +31,6 @@ public class OrderController {
         OrderResponseDTO order = orderService.getOrderById(id);
         return new ResponseEntity<>(order, HttpStatus.OK);
     }
-
 
     @GetMapping("/customer/{customerId}")
     public ResponseEntity<List<OrderResponseDTO>> getOrdersByCustomerId(@PathVariable Long customerId) {
