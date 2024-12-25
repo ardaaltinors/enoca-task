@@ -4,6 +4,78 @@ Bu proje, Spring Boot kullanılarak geliştirilmiş bir e-ticaret backend hizmet
 
 ---
 
+## Database Structure
+
+```mermaid
+erDiagram
+    CUSTOMER {
+        Long id PK
+        String firstName
+        String lastName
+        String email
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
+    }
+    CART {
+        Long id PK
+        Long customer_id FK
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
+    }
+    CART_ITEM {
+        Long id PK
+        Long cart_id FK
+        Long product_id FK
+        Integer quantity
+        BigDecimal price
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
+    }
+    PRODUCT {
+        Long id PK
+        String name
+        String description
+        BigDecimal price
+        Integer stockQuantity
+        String category
+        String imageUrl
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
+    }
+    ORDERS {
+        Long id PK
+        Long customer_id FK
+        String orderStatus
+        BigDecimal totalAmount
+        String shippingAddress
+        String billingAddress
+        String paymentMethod
+        String shippingMethod
+        LocalDateTime orderDate
+        LocalDateTime shippedDate
+        LocalDateTime deliveredDate
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
+    }
+    ORDER_ITEM {
+        Long id PK
+        Long order_id FK
+        Long product_id FK
+        Integer quantity
+        BigDecimal price
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
+    }
+
+    CUSTOMER ||--|| CART : owns
+    CUSTOMER ||--|{ ORDERS : places
+    CART ||--|{ CART_ITEM : contains
+    CART_ITEM ||--|| PRODUCT : includes
+    ORDERS ||--|{ ORDER_ITEM : includes
+    ORDER_ITEM ||--|| PRODUCT : includes
+```
+
+
 ## Endpoint'ler
 
 ### Müşteriler
